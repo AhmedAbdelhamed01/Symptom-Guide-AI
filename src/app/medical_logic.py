@@ -6,13 +6,13 @@ import re
 import logging
 from typing import Optional
 
-from .config import (
+from src.app.config import (
     EMERGENCY_PATTERNS,
     FUZZY_EMERGENCY_PATTERNS,
     INTENT_CLASSIFICATION_PROMPT,
     QUERY_ENHANCEMENT_PROMPT
 )
-from .llm_utils import build_chain
+from src.app.llm_utils import build_chain
 
 logger = logging.getLogger("SymptoGuide")
 

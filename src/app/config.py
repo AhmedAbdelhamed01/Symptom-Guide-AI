@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import List, Dict
 
 # ============================================================================
-# 📁 PROJECT PATHS
+#  PROJECT PATHS
 # ============================================================================
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +30,7 @@ class MedicalConfig:
 
 
 # ============================================================================
-# 🚨 EMERGENCY KEYWORDS & PATTERNS
+#  EMERGENCY KEYWORDS & PATTERNS
 # ============================================================================
 
 EMERGENCY_PATTERNS: List[Dict[str, any]] = [
@@ -49,7 +49,7 @@ FUZZY_EMERGENCY_PATTERNS = [
 
 
 # ============================================================================
-# 💬 PROMPT TEMPLATES
+#  PROMPT TEMPLATES
 # ============================================================================
 
 INTENT_CLASSIFICATION_PROMPT = """

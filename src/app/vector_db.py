@@ -10,7 +10,7 @@ import streamlit as st
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
-from .config import MedicalConfig
+from src.app.config import MedicalConfig
 
 logger = logging.getLogger("SymptoGuide")
 

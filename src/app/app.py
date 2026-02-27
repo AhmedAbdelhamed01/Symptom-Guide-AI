@@ -5,16 +5,19 @@ Main Streamlit UI application.
 
 import streamlit as st
 import os
+import sys
 import logging
 
-from config import MedicalConfig
-from llm_utils import set_mode, build_chain
-from medical_logic import fast_emergency_check, classify_intent, enhance_query
-from vector_db import load_vector_db, smart_category_search
-from config import DIAGNOSIS_PROMPT
+# Add src to Python path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from src.app.config import MedicalConfig, DIAGNOSIS_PROMPT
+from src.app.llm_utils import set_mode, build_chain
+from src.app.medical_logic import fast_emergency_check, classify_intent, enhance_query
+from src.app.vector_db import load_vector_db, smart_category_search
 
 # ============================================================================
-# 📝 LOGGING SETUP
+#  LOGGING SETUP
 # ============================================================================
 
 def setup_logging():
@@ -36,7 +39,7 @@ def setup_logging():
 logger = setup_logging()
 
 # ============================================================================
-# 🖥️ PAGE CONFIG
+#  PAGE CONFIG
 # ============================================================================
 
 st.set_page_config(
@@ -72,7 +75,7 @@ st.title(f"{MedicalConfig.PAGE_ICON} {MedicalConfig.PAGE_TITLE}")
 st.caption("Enterprise Medical Assistant | Intent-Aware RAG System")
 
 # ============================================================================
-# ⚙️ SIDEBAR SETTINGS
+#  SIDEBAR SETTINGS
 # ============================================================================
 
 with st.sidebar:
@@ -103,7 +106,7 @@ except Exception as e:
     st.stop()
 
 # ============================================================================
-# 💬 CHAT INTERFACE
+#  CHAT INTERFACE
 # ============================================================================
 
 if "messages" not in st.session_state:
