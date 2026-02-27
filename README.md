@@ -1,143 +1,307 @@
 
-# SymptoGuide AI
+# SymptoGuide AI 🏥
 
-Symptoguide is a research & educational prototype: a retrieval-augmented medical assistant built with Streamlit and vector search. This repository contains scrapers, processing scripts, vector DB builders, and a Streamlit UI prototype.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://github.com/AhmedAbdelhamed01/symptoguide-ai/workflows/Python%20Package/badge.svg)](https://github.com/AhmedAbdelhamed01/symptoguide-ai/actions)
 
-IMPORTANT: This project is for research and educational purposes only. It is NOT a medical diagnostic tool. Always consult qualified healthcare professionals for medical advice.
+A research & educational prototype of a **Retrieval-Augmented Generation (RAG)** medical assistant built with **Streamlit**, **LangChain**, and **Chroma** vector database. 
 
-Repository layout (key files)
+SymptoGuide aggregates medical information from NHS and Mayo Clinic, processes it through a vector search pipeline, and provides AI-powered symptom guidance through an interactive web interface.
 
-- `src/app/app.py` — Streamlit UI and main application logic.
-- `src/vector_db/create_vector_db.py` — build the Chroma vector database from processed JSONL data.
-- `src/scrapers/` — web scrapers (NHS, Mayo, etc.).
-- `src/processing/` — data cleaning and dataset creation scripts.
-- `data/processed/` — processed JSON/JSONL files used for indexing.
-- `chroma_db/` — persisted Chroma database (should not be committed for large DBs).
-- `requirements.txt` — Python dependencies.
-- `.github/workflows/python-package.yml` — CI workflow to run tests.
+⚠️ **IMPORTANT DISCLAIMER**: This project is for **research and educational purposes only**. It is **NOT** a medical diagnostic tool and should **never be used for actual medical diagnosis or treatment**. Always consult qualified healthcare professionals for medical advice.
 
-Prerequisites
+## Features
 
-- Python 3.10+ recommended.
-- Git and an internet connection for downloading models/data when required.
-- Optional: GPU + CUDA if you plan to run local embedding models faster.
+- 🔍 **Vector-based semantic search** using Chroma and HuggingFace embeddings
+- 🤖 **LLM integration** supporting both local (Ollama) and cloud-based models
+- 📊 **Multi-source data aggregation** (NHS conditions, symptoms, medicines; Mayo Clinic tests/procedures)
+- 🚀 **Interactive Streamlit UI** for symptom queries and medical information retrieval
+- 📦 **Full data pipeline** with scrapers, processors, and vector DB builders
+- ✅ **CI/CD ready** with GitHub Actions workflow for automated testing
+- 🎯 **Production-ready packaging** with setuptools configuration
 
-Quick start (development)
+## Repository Structure
 
-1. Clone the repository:
+```
+symptoguide-ai/
+├── src/
+│   ├── app/                          # Streamlit application
+│   │   ├── app.py                   # Main UI and logic
+│   │   ├── config.py                # Configuration management
+│   │   ├── llm_utils.py             # LLM backend utilities
+│   │   ├── medical_logic.py         # Medical data processing
+│   │   └── vector_db.py             # Vector database interface
+│   ├── processing/                  # Data transformation pipeline
+│   │   ├── process_nhs_symptoms_final.py
+│   │   ├── process_mayo_tests_final.py
+│   │   ├── clean_nhs_medicines_final.py
+│   │   └── create_master_dataset.py
+│   ├── scrapers/                    # Web scraping modules
+│   │   ├── scrape_nhs.py
+│   │   ├── scrape_nhs_medicines.py
+│   │   ├── scrape_nhs_symptoms_clean.py
+│   │   └── scrape_symptoms.py
+│   └── vector_db/                   # Vector database creation
+├── data/
+│   ├── raw/                         # Original scraped data
+│   └── processed/                   # Cleaned JSONL for indexing
+├── chroma_db/                       # Persisted vector database (.gitignored)
+├── tests/                           # Unit tests
+├── pyproject.toml                   # Project metadata & build config
+├── setup.cfg                        # setuptools configuration
+├── requirements.txt                 # Python dependencies
+└── README.md                        # This file
+```
 
-```powershell
-git clone <repo-url>
+## Prerequisites
+
+- **Python 3.10+**
+- **Git** for version control
+- **pip** (included with Python)
+- Internet connection for downloading models and data
+- *(Optional)* GPU + CUDA for faster local embeddings
+
+## Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/AhmedAbdelhamed01/symptoguide-ai.git
 cd symptoguide-ai
 ```
 
-2. Create and activate a virtual environment:
+### 2. Create a virtual environment
 
-```powershell
+```bash
 python -m venv .venv
+# On Windows:
 .venv\Scripts\activate
+# On macOS/Linux:
+source .venv/bin/activate
 ```
 
-3. Install dependencies:
+### 3. Install dependencies
 
-```powershell
+```bash
 pip install -r requirements.txt
 ```
 
-4. Run the Streamlit UI:
+### 4. Run the application
 
-```powershell
+```bash
 streamlit run src/app/app.py
 ```
 
-Configuration and environment
+The app will open at `http://localhost:8501`
 
-- If you use HuggingFace Hub models, set the `HUGGINGFACEHUB_API_TOKEN` environment variable or enter it in the app sidebar when prompted.
-- Default paths are relative to the project root. See `src/vector_db/create_vector_db.py` for expected `data/processed/` and `chroma_db/` paths.
 
-Data pipeline (from raw scraping → vector DB)
+## Configuration
 
-1. Scrape raw data
+### Environment Variables
 
-- Run scraper scripts in `src/scrapers/` to collect content from sources. Example:
+Set these environment variables before running the app:
 
-```powershell
-python src/scrapers/scrape_nhs.py
+```bash
+# For HuggingFace Hub models (if used)
+export HUGGINGFACEHUB_API_TOKEN=your_token_here
+
+# For Ollama (if running locally)
+# No additional setup needed; configure in app sidebar
 ```
 
-2. Process and clean
+### Configuration File
 
-- Use scripts in `src/processing/` to clean, normalize, and create the master JSONL dataset. Example flow:
+Edit `src/app/config.py` to customize:
+- Model provider (local Ollama or HuggingFace)
+- Vector database paths
+- Embedding model selection
+- LLM parameters (temperature, max tokens, etc.)
 
-```powershell
+## Data Pipeline
+
+The data processing flow goes from raw scraped data → cleaned JSON → master JSONL → vector embeddings:
+
+### Step 1: Scrape Raw Data
+
+Run scrapers to collect content from NHS and Mayo Clinic:
+
+```bash
+python src/scrapers/scrape_nhs.py
+python src/scrapers/scrape_nhs_medicines.py
+python src/scrapers/scrape_nhs_symptoms_clean.py
+```
+
+Data is saved to `data/raw/`
+
+### Step 2: Process & Clean
+
+Transform raw data into uniform, clean formats:
+
+```bash
 python src/processing/process_nhs_symptoms_final.py
+python src/processing/process_mayo_tests_final.py
+python src/processing/clean_nhs_medicines_final.py
 python src/processing/create_master_dataset.py
 ```
 
-3. Build embeddings / vector DB
+Output: `data/processed/symptoguide_master.jsonl`
 
-- After producing `data/processed/symptoguide_master.jsonl`, build the Chroma DB:
+### Step 3: Build Vector Database
 
-```powershell
+Create embeddings and index in Chroma:
+
+```bash
 python src/vector_db/create_vector_db.py
 ```
 
-- The script writes a persistent Chroma DB under `chroma_db/` by default. Large DB files should not be committed; see `.gitignore`.
+Creates persistent database at `chroma_db/`
 
-Running the app (detailed)
+## Usage
 
-- Start the app with:
+### Running the Application
 
-```powershell
+```bash
 streamlit run src/app/app.py
 ```
 
-- Sidebar options allow switching model backends (local Ollama vs cloud HuggingFace). Provide tokens or credentials when using cloud services.
+**Features:**
+- Enter symptom descriptions in the search box
+- Select model backend (local/cloud) in sidebar
+- View AI-generated guidance with source citations
+- Optional: Adjust temperature and max tokens for model behavior
 
-Testing
+### Running Tests
 
-- Basic tests are in `tests/`. Run them with:
-
-```powershell
+```bash
 pytest -q
 ```
 
-Packaging
+## Architecture
 
-- This repository uses the `src/` layout. To build a wheel:
+### Components
 
-```powershell
+- **Data Ingestion**: NHS/Mayo scrapers collect medical information
+- **Data Processing**: Cleaning and normalization pipeline
+- **Vector Database**: Chroma stores embeddings for semantic search
+- **LLM Backend**: Dual support for local (Ollama) and cloud models (HuggingFace)
+- **UI Layer**: Streamlit provides interactive interface
+- **RAG Pipeline**: LangChain orchestrates retrieval + generation
+
+### Technology Stack
+
+| Component | Technology |
+|-----------|------------|
+| **Framework** | Streamlit |
+| **LLM Integration** | LangChain |
+| **Vector DB** | Chroma |
+| **Embeddings** | HuggingFace Transformers |
+| **Local LLM** | Ollama |
+| **Testing** | pytest |
+| **Build** | setuptools, build |
+
+## Packaging & Distribution
+
+### Build a wheel
+
+```bash
 pip install build
 python -m build
 ```
 
-- The packaging metadata files are `setup.cfg`, `pyproject.toml`, and `MANIFEST.in`.
+Output files go to `dist/`
 
-CI
+### Install locally
 
-- A GitHub Actions workflow is included at `.github/workflows/python-package.yml` that installs dependencies and runs `pytest` on pushes/PRs to `main`/`master`.
+```bash
+pip install dist/symptoguide_ai-*.whl
+```
 
-Security & privacy
+## CI/CD
 
-- Do not commit `chroma_db/`, `data/`, or `logs/` containing raw scraped text or PII. These paths are included in `.gitignore`.
-- If you plan to share the project, remove any personal or sensitive data from the working copy first.
+GitHub Actions workflow (`.github/workflows/python-package.yml`):
+- Runs on every push to `main` and PRs
+- Installs dependencies
+- Runs test suite with pytest
+- Validates Python packaging
 
-Notes about changes I made
+## Security & Privacy
 
-- Renamed and moved `src/Vector_db/` → `src/vector_db/` and added `src/vector_db/create_vector_db.py` using relative paths.
-- Added packaging + CI scaffolding (`setup.cfg`, `pyproject.toml`, `MANIFEST.in`, `.github/workflows/...`).
-- Added small unit test placeholder in `tests/test_basic.py`.
+🔒 **Important**:
+- Never commit `chroma_db/`, `data/`, or `logs/` directories (.gitignored)
+- Don't share personal or sensitive medical data scraped from sources
+- Remove any PII before deploying publicly
 
-Troubleshooting
 
-- If the app fails to locate the vector DB, confirm `chroma_db/` exists and has data. You can rebuild it with `python src/vector_db/create_vector_db.py`.
-- If HuggingFace downloads fail, check `HUGGINGFACEHUB_API_TOKEN` and network access.
+## Troubleshooting
 
-Contributing
+### Vector Database Issues
 
-- See `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` for contribution guidelines.
+**Problem**: App fails to locate the vector DB  
+**Solution**: Rebuild with `python src/vector_db/create_vector_db.py`
 
-License
+### HuggingFace Download Issues
 
-- This repository is licensed under the MIT License (`LICENSE`).
+**Problem**: Model downloads fail  
+**Solution**: 
+- Verify `HUGGINGFACEHUB_API_TOKEN` is set (if needed)
+- Check internet connection
+- Manually download model: `huggingface-cli download <model-id>`
 
+### Streamlit Port Already in Use
+
+**Problem**: Port 8501 already in use  
+**Solution**: `streamlit run src/app/app.py --server.port 8502`
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Reporting bugs
+- Proposing features
+- Submitting pull requests
+- Code style and testing requirements
+
+## Code of Conduct
+
+This project adheres to a Contributor Code of Conduct. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## Authors
+
+- Ahmed Abdelhamed - Core development
+- Developed as part of **CSAI 810: Topics in Artificial Intelligence** (Queen's University)
+
+## Acknowledgments
+
+- **NHS**: For providing open medical data
+- **Mayo Clinic**: For test/procedure information
+- **LangChain**: For the RAG orchestration framework
+- **Chroma**: For vector database functionality
+- **Streamlit**: For the interactive UI framework
+
+## References
+
+- [LangChain Documentation](https://python.langchain.com/)
+- [Chroma Vector Database](https://www.trychroma.com/)
+- [Streamlit Documentation](https://docs.streamlit.io/)
+- [NHS Health Information](https://www.nhs.uk/)
+
+## License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+## Disclaimer
+
+⚠️ **Medical Disclaimer**:  
+This software is provided as an **educational and research tool only**. It is:
+- **NOT** a substitute for professional medical advice
+- **NOT** intended for medical diagnosis or treatment decisions
+- **NOT** reviewed or approved by medical professionals
+- **NOT** a replacement for consulting healthcare providers
+
+**Always consult a qualified healthcare professional for medical concerns.**
+
+---
+
+**Last Updated**: February 2026  
+**Version**: 1.0.0  
+**Status**: Research/Educational Prototype
