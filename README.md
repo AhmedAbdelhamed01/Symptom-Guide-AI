@@ -100,16 +100,17 @@ The app will open at `http://localhost:8501`
 
 ### Environment Variables
 
-Set these environment variables before running the app:
+Set these environment variables before running the app. A `.env` file
+in the project root is automatically loaded via `python-dotenv`.
 
 ```bash
 # For HuggingFace Hub models (if used)
-export HUGGINGFACEHUB_API_TOKEN=your_token_here
+HUGGINGFACEHUB_API_TOKEN=your_token_here
 
-# For Ollama (if running locally)
-# No additional setup needed; configure in app sidebar
+# Additional configuration can be placed in .env as needed.
+# For Ollama (if running locally) no token is required, but you can still
+# override default model names or other settings via the config class.
 ```
-
 ### Configuration File
 
 Edit `src/app/config.py` to customize:
@@ -166,7 +167,8 @@ streamlit run src/app/app.py
 ```
 
 **Features:**
-- Enter symptom descriptions in the search box
+- Enter symptom descriptions in the search box or pick from a validated dropdown list
+- Confidence score displayed for retrieval results (helps gauge match quality)
 - Select model backend (local/cloud) in sidebar
 - View AI-generated guidance with source citations
 - Optional: Adjust temperature and max tokens for model behavior
@@ -239,7 +241,12 @@ GitHub Actions workflow (`.github/workflows/python-package.yml`):
 
 **Problem**: App fails to locate the vector DB  
 **Solution**: Rebuild with `python src/vector_db/create_vector_db.py`
+### Empty Search / No Results
 
+**Problem**: The assistant says it found no matching records.  
+**Solution**: Try selecting symptoms from the dropdown list or rephrase your input.  
+If you consistently get low confidence (displayed above the response), the
+query may be too vague or unrelated to the existing dataset.
 ### HuggingFace Download Issues
 
 **Problem**: Model downloads fail  

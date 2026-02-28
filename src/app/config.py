@@ -6,6 +6,10 @@ import os
 from dataclasses import dataclass
 from typing import List, Dict
 
+# load environment variables from .env file if it exists
+from dotenv import load_dotenv
+load_dotenv()
+
 # ============================================================================
 #  PROJECT PATHS
 # ============================================================================

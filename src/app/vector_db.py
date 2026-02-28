@@ -48,8 +48,11 @@ def load_vector_db():
 
 def smart_category_search(vector_db, query: str) -> List:
     """
-    Smart search: attempt to retrieve 1 Condition, 1 Medicine, 1 Symptom, 1 Test.
-    Falls back to generic search if categories not found.
+    Smart search: attempt to retrieve several documents across key categories
+    and return tuples of (Document, score).  Each score comes directly from
+    the Chroma `similarity_search_with_score` API, allowing callers to compute
+    a rough confidence level.  If category-specific results are not found,
+    fall back to a generic search.
     """
     results = []
     seen_ids = set()
@@ -66,19 +69,18 @@ def smart_category_search(vector_db, query: str) -> List:
     # Try category-specific searches
     for target in targets:
         try:
-            docs = vector_db.similarity_search(
+            docs_with_score = vector_db.similarity_search_with_score(
                 query,
                 k=target["k"],
                 filter={"entity_type": target["type"]}
             )
-            
-            for doc in docs:
+            for doc, score in docs_with_score:
                 doc_id = doc.metadata.get('url', doc.page_content[:20])
                 if doc_id not in seen_ids:
                     doc.metadata['search_category'] = target['type'].upper()
-                    results.append(doc)
+                    results.append((doc, score))
                     seen_ids.add(doc_id)
-                    print(f"   -> Found [{target['type']}]: {doc.metadata.get('name', 'Unknown')}")
+                    print(f"   -> Found [{target['type']}]: {doc.metadata.get('name', 'Unknown')} (score={score})")
         except Exception as e:
             logger.warning(f"Category search failed for {target['type']}: {e}")
             continue
@@ -86,6 +88,27 @@ def smart_category_search(vector_db, query: str) -> List:
     # Fallback: generic search if no results
     if not results:
         print("   -> No category matches. Falling back to generic search.")
-        results = vector_db.similarity_search(query, k=4)
+        generic_results = vector_db.similarity_search_with_score(query, k=4)
+        results = generic_results
     
     return results
+
+
+def list_symptom_names(vector_db) -> list:
+    """
+    Return a sorted list of unique symptom names available in the database.
+    This is used for UI dropdowns to give users a controlled vocabulary.
+    """
+    names = set()
+    try:
+        data = vector_db._collection.get()
+        metadatas = data.get('metadatas', [])
+        for m in metadatas:
+            if m.get('entity_type') == 'symptom_guide':
+                name = m.get('name')
+                if name:
+                    names.add(name)
+    except Exception:
+        # if anything fails, fall back to empty list
+        return []
+    return sorted(names)

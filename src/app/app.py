@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.app.config import MedicalConfig, DIAGNOSIS_PROMPT
 from src.app.llm_utils import set_mode, build_chain
 from src.app.medical_logic import fast_emergency_check, classify_intent, enhance_query
-from src.app.vector_db import load_vector_db, smart_category_search
+from src.app.vector_db import load_vector_db, smart_category_search, list_symptom_names
 
 # ============================================================================
 #  LOGGING SETUP
@@ -100,6 +100,8 @@ with st.sidebar:
 
 try:
     vector_db = load_vector_db()
+    # build a symptom list for dropdown/autocomplete
+    symptom_list = list_symptom_names(vector_db)
 except Exception as e:
     st.error(f"Error loading resources: {e}")
     logger.error(f"Resource loading failed: {e}")
@@ -120,7 +122,23 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"], unsafe_allow_html=True)
 
 # Chat input & processing
-if user_input := st.chat_input("Describe your symptoms..."):
+# offer a multiselect of known symptoms for improved validation
+symptom_choice = None
+if symptom_list:
+    symptom_choice = st.multiselect(
+        "Or select symptoms from list (optional)",
+        options=symptom_list,
+        max_selections=5,
+        help="Choose one or more items to autofill the query"
+    )
+
+if symptom_choice:
+    # if user chose from dropdown, join them into a query string
+    user_input = ", ".join(symptom_choice)
+else:
+    user_input = st.chat_input("Describe your symptoms...")
+
+if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -179,18 +197,27 @@ if user_input := st.chat_input("Describe your symptoms..."):
                 
                 # 2. Smart Search
                 with st.spinner("📚 Retrieving Conditions, Medicines & Tests..."):
-                    retrieved_docs = smart_category_search(vector_db, enhanced_query)
+                    retrieved_with_scores = smart_category_search(vector_db, enhanced_query)
                     
-                    if not retrieved_docs:
+                    if not retrieved_with_scores:
                         full_response = "I searched my database but found no matching records. Please describe your symptoms differently."
                         message_placeholder.markdown(full_response)
                         st.stop()
                     
+                    # unpack docs and scores, also compute confidence
+                    docs, scores = zip(*retrieved_with_scores)
+                    # convert score to a rough confidence (1/(1+score))
+                    avg_score = sum(scores) / len(scores)
+                    confidence = 1 / (1 + avg_score)
+                    confidence_pct = int(confidence * 100)
+                    
                     context_text = ""
-                    for doc in retrieved_docs:
+                    for doc in docs:
                         category = doc.metadata.get('entity_type', 'General').upper()
                         name = doc.metadata.get('name', 'Unknown')
                         context_text += f"--- {category}: {name} ---\n{doc.page_content}\n\n"
+                # display confidence bar
+                st.info(f"🔎 Search confidence: {confidence_pct}%")
                 
                 # 3. Generate Diagnosis
                 with st.spinner("🩺 Generating advice..."):
@@ -203,7 +230,7 @@ if user_input := st.chat_input("Describe your symptoms..."):
                     
                     # Display sources
                     with st.expander("📚 Referenced Medical Sources"):
-                        for doc in retrieved_docs:
+                        for doc in docs:
                             cat = doc.metadata.get('entity_type', 'Doc').upper()
                             name = doc.metadata.get('name', 'Unknown')
                             url = doc.metadata.get('url', '#')
