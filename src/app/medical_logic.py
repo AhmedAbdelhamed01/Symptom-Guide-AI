@@ -66,3 +66,52 @@ def enhance_query(text: str) -> str:
     
     logger.info(f"Query Enhanced: {text} -> {enhanced}")
     return enhanced
+
+
+def detect_context_request(text: str) -> bool:
+    """
+    Detect if user is asking about their previous symptoms/history.
+    Examples: 'do you know all things i have', 'what did i tell you', 'summarize my symptoms'
+    """
+    text_lower = text.lower()
+    context_keywords = [
+        "know all things", "all things i have", "everything i have",
+        "what did i", "what have i", "summarize", "recap",
+        "remember", "what was", "previous", "before",
+        "did i tell", "all symptoms", "full history",
+        "my symptoms", "what else", "tell me about", "what i said"
+    ]
+    return any(keyword in text_lower for keyword in context_keywords)
+
+
+def extract_symptoms_from_history(messages: list) -> str:
+    """
+    Extract all mentioned symptoms from chat history.
+    Returns formatted string of all symptoms/health issues mentioned by user.
+    """
+    user_messages = []
+    for msg in messages:
+        if msg.get("role") == "user":
+            user_messages.append(msg.get("content", ""))
+    
+    # Combine all user messages for analysis
+    combined_text = " ".join(user_messages).lower()
+    
+    # Look for symptom indicators
+    symptom_indicators = [
+        "pain", "ache", "fever", "cold", "flu", "cough", "sneeze",
+        "nausea", "vomit", "headache", "dizziness", "fatigue",
+        "rash", "itch", "swelling", "sore", "hurt", "bleeding",
+        "diarrhea", "constipation", "anxiety", "sweat", "chills",
+        "difficulty", "shortness", "chest", "weakness", "tremor",
+        "stress", "tired", "sore throat", "runny nose", "congestion"
+    ]
+    
+    found_symptoms = []
+    for indicator in symptom_indicators:
+        if indicator in combined_text:
+            found_symptoms.append(indicator.title())
+    
+    if found_symptoms:
+        return "Symptoms mentioned during this conversation:\n" + ", ".join(set(found_symptoms))
+    return "(No specific symptoms recorded in chat history)"

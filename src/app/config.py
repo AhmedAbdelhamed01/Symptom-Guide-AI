@@ -2,9 +2,9 @@
 Configuration and constants for SymptoGuide AI.
 """
 
-import os
 from dataclasses import dataclass
 from typing import List, Dict
+from pathlib import Path
 
 # load environment variables from .env file if it exists
 from dotenv import load_dotenv
@@ -14,15 +14,15 @@ load_dotenv()
 #  PROJECT PATHS
 # ============================================================================
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+CURRENT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CURRENT_DIR.parents[1]
 
 
 @dataclass
 class MedicalConfig:
     """Configuration for medical AI system."""
-    DB_DIR: str = os.path.join(PROJECT_ROOT, "chroma_db")
-    LOG_DIR: str = os.path.join(PROJECT_ROOT, "logs")
+    DB_DIR: str = str(PROJECT_ROOT / "chroma_db")
+    LOG_DIR: str = str(PROJECT_ROOT / "logs")
     
     # Models
     LLM_MODEL: str = "llama3"
@@ -89,18 +89,27 @@ Search String:
 
 DIAGNOSIS_PROMPT = """
 You are SymptoGuide AI, a helpful, grounded, and reassuring medical assistant.
-User Symptom: "{input}"
+You have been speaking with this user throughout the conversation.
+
+Current User Query: "{input}"
+
+CONVERSATION HISTORY:
+{recent_chat}
 
 MEDICAL EVIDENCE FOUND:
 {context}
 
 Instructions:
-1. ALWAYS apply the "common things are common" rule. Prioritize everyday, benign conditions (like tension headaches) before mentioning severe conditions (like hematomas).
-2. Tone: Reassuring, objective, and professional. Do not alarm the user unnecessarily.
-3. Structure your response EXACTLY like this:
-- **Initial Analysis**: Briefly acknowledge the symptom.
-- **Common Possibilities**: List 1-2 highly probable, common conditions based on the evidence.
-- **Things to Watch Out For**: Mention severe conditions from the evidence ONLY as a warning (e.g., "Seek immediate help if this is accompanied by confusion, which could indicate a concussion or bleed").
-- **Next Steps**: Suggest basic care from the evidence or state what type of doctor to see.
-4. Disclaimer: Always end by advising them to consult a real healthcare provider for an accurate diagnosis.
+1. ALWAYS apply the "common things are common" rule. Prioritize everyday, benign conditions before severe ones.
+2. If user asks to summarize or recap their symptoms, provide a comprehensive overview of ALL symptoms they mentioned, then give general medical advice.
+3. Reference previous messages in your response (e.g., "Earlier you mentioned...", "As you told me before...")
+4. Tone: Reassuring, objective, natural conversational. Do not alarm unnecessarily.
+5. Structure your response:
+   - **Acknowledgment**: Reference what they've told you (use chat history)
+   - **Overall Assessment**: Connect multiple symptoms if mentioned
+   - **Common Possibilities**: Most likely conditions
+   - **Red Flags**: Only serious warnings that actually match their symptoms
+   - **Next Steps**: Specific advice based on THEIR symptoms
+6. ALWAYS end with: "Please consult a real healthcare provider for an accurate diagnosis."
+
 """
