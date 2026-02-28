@@ -1,4 +1,4 @@
-﻿"""
+"""
 SymptoGuide AI: Smart Router + Category Search
 Main Streamlit UI application.
 """
@@ -248,9 +248,7 @@ if user_input:
                 message_placeholder.markdown(full_response)
             
             elif intent == "VAGUE":
-                full_response = "I understand you aren't feeling well, but I need more details. 
-
-**Please tell me:**\n1. Where is the pain/symptom?\n2. How long have you had it?\n3. Are there other symptoms (fever, nausea, etc.)?"
+                full_response = "I understand you aren't feeling well, but I need more details.\n\n**Please tell me:**\n1. Where is the pain/symptom?\n2. How long have you had it?\n3. Are there other symptoms (fever, nausea, etc.)?"
                 message_placeholder.markdown(full_response)
             
             elif is_context_request:
@@ -263,12 +261,21 @@ if user_input:
                     with st.spinner("🩺 Analyzing all your symptoms..."):
                         try:
                             recent_chat = format_chat_context(st.session_state.messages[:-1])
-                            context_aware_prompt = DIAGNOSIS_PROMPT + f"
-
-IMPORTANT: User is asking you to summarize/recap all their symptoms from the conversation.\nAll symptoms found: {all_symptoms}"
+                            context_aware_prompt = DIAGNOSIS_PROMPT + f"\n\nIMPORTANT: User is asking you to summarize/recap all their symptoms from the conversation.\nAll symptoms found: {all_symptoms}"
                             diagnosis_chain = build_chain(context_aware_prompt, temperature=0.2)
                             
-                            for chunk in diagnosis_chain.stream({"input": user_input, "context": all_symptoms, "recent_chat": recent_chat}):\n                                full_response += chunk\n                                message_placeholder.markdown(full_response + "▌")\n                            message_placeholder.markdown(full_response)\n                        except Exception as e:\n                            logger.error(f"Recap generation failed: {e}")\n                            full_response = f"Based on our conversation, I found: {all_symptoms}\\n\\nPlease consult a real healthcare provider for an accurate diagnosis."\n                            message_placeholder.markdown(full_response)\n                else:\n                    full_response = f"I don't have any symptom records from our conversation yet. {all_symptoms}\\n\\nPlease tell me what symptoms you're experiencing, and I'll help you."\n                    message_placeholder.markdown(full_response)\n            
+                            for chunk in diagnosis_chain.stream({"input": user_input, "context": all_symptoms, "recent_chat": recent_chat}):
+                                full_response += chunk
+                                message_placeholder.markdown(full_response + "▌")
+                            message_placeholder.markdown(full_response)
+                        except Exception as e:
+                            logger.error(f"Recap generation failed: {e}")
+                            full_response = f"Based on our conversation, I found: {all_symptoms}\n\nPlease consult a real healthcare provider for an accurate diagnosis."
+                            message_placeholder.markdown(full_response)
+                else:
+                    full_response = f"I don't have any symptom records from our conversation yet. {all_symptoms}\n\nPlease tell me what symptoms you're experiencing, and I'll help you."
+                    message_placeholder.markdown(full_response)
+            
             elif intent == "SYMPTOM":
                 # 1. Enhance Query
                 with st.spinner("🔬 Analyzing medical terms..."):
@@ -309,9 +316,7 @@ IMPORTANT: User is asking you to summarize/recap all their symptoms from the con
                     for doc in docs:
                         category = doc.metadata.get('entity_type', 'General').upper()
                         name = doc.metadata.get('name', 'Unknown')
-                        context_text += f"--- {category}: {name} ---\n{doc.page_content}
-
-"
+                        context_text += f"--- {category}: {name} ---\n{doc.page_content}\n\n"
                 
                 # Display confidence
                 st.info(f"🔎 Search confidence: {confidence_pct}%")
