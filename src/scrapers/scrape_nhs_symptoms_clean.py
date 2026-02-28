@@ -3,15 +3,20 @@ from bs4 import BeautifulSoup
 import json
 import os
 import time
+import logging
 
 # -------- Settings (dynamic paths) --------
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+from pathlib import Path
 
-DATA_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "nhs_symptoms")
-OUTPUT_FILE = os.path.join(DATA_DIR, "nhs_symptoms_clean.json")
+CURRENT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CURRENT_DIR.parents[1]
+
+DATA_DIR = PROJECT_ROOT / "data" / "raw" / "nhs_symptoms"
+OUTPUT_FILE = DATA_DIR / "nhs_symptoms_clean.json"
 
 os.makedirs(DATA_DIR, exist_ok=True)
+
+logger = logging.getLogger("SymptoGuide")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -20,7 +25,7 @@ HEADERS = {
 def get_clean_symptom_links():
     """Fetches the index but filters out the garbage A-Z links."""
     url = "https://www.nhs.uk/symptoms/"
-    print(f"[INFO] Scanning Index: {url}")
+    logger.info(f"Scanning Index: {url}")
     
     try:
         r = requests.get(url, headers=HEADERS, timeout=15)
@@ -56,7 +61,7 @@ def get_clean_symptom_links():
         return real_links
 
     except Exception as e:
-        print(f"[ERROR] Index failed: {e}")
+        logger.error(f"Index failed: {e}")
         return []
 
 def scrape_page_content(url):
@@ -89,23 +94,23 @@ def scrape_page_content(url):
         
         return "\n".join(text_parts)
 
-    except:
+    except Exception:
         return ""
 
 def main():
-    print("---------------------------------------------")
-    print("   🏥 NHS SYMPTOMS SCRAPER (CLEANER) 🏥    ")
-    print("---------------------------------------------")
+    logger.info("---------------------------------------------")
+    logger.info("   NHS SYMPTOMS SCRAPER (CLEANER)    ")
+    logger.info("---------------------------------------------")
     
     # 1. Get Links
     links = get_clean_symptom_links()
-    print(f"[INFO] Found {len(links)} actual symptom pages.")
+    logger.info(f"Found {len(links)} actual symptom pages.")
     
     # 2. Deep Scrape
     final_data = []
     
     for idx, item in enumerate(links):
-        print(f"   [{idx+1}/{len(links)}] Scraping: {item['name']}...")
+        logger.info(f"[{idx+1}/{len(links)}] Scraping: {item['name']}...")
         
         content = scrape_page_content(item['url'])
         
@@ -130,7 +135,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(final_data, f, ensure_ascii=False, indent=2)
     
-    print(f"\n[DONE] Saved {len(final_data)} clean symptom guides to {OUTPUT_FILE}")
+    logger.info(f"Saved {len(final_data)} clean symptom guides to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()

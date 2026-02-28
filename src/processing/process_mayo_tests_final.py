@@ -1,6 +1,9 @@
 import json
 import os
 import re
+import logging
+
+logger = logging.getLogger("SymptoGuide")
 
 # -------- Settings (dynamic paths) --------
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,17 +38,17 @@ def clean_mayo_text(text):
     return " ".join(text.split())
 
 def main():
-    print(f"[INFO] Processing: {INPUT_FILE}")
+    logger.info(f"Processing: {INPUT_FILE}")
     
     if not os.path.exists(INPUT_FILE):
-        print("[ERROR] Input file not found.")
+        logger.error("Input file not found.")
         return
 
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     final_data = []
-    print(f"[INFO] Formatting {len(data)} tests...")
+    logger.info(f"Formatting {len(data)} tests...")
 
     for entry in data:
         # Get raw fields
@@ -79,7 +82,7 @@ def main():
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(final_data, f, ensure_ascii=False, indent=2)
 
-    print(f"[SUCCESS] Saved {len(final_data)} standardized tests to: {OUTPUT_FILE}")
+    logger.info(f"Saved {len(final_data)} standardized tests to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()

@@ -28,6 +28,7 @@ env/
 ENV/
 env.bak/
 venv.bak/
+.venv/
 
 # IDEs
 .vscode/
@@ -41,6 +42,13 @@ Thumbs.db
 /chroma_db/
 /data/
 /logs/
+
+# Environment variables
+.env
+.env.local
+
+# Chat history (auto-saved conversations)
+/chat_history/
 
 # Misc
 *.log

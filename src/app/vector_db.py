@@ -53,7 +53,13 @@ def smart_category_search(vector_db, query: str) -> List:
     the Chroma `similarity_search_with_score` API, allowing callers to compute
     a rough confidence level.  If category-specific results are not found,
     fall back to a generic search.
+
+    Documents with a distance score above MAX_DISTANCE_THRESHOLD are discarded
+    to prevent irrelevant results (e.g., Q fever for a headache query) from
+    being injected into the LLM context.
     """
+    MAX_DISTANCE_THRESHOLD = 1.2  # lower = stricter; filters out irrelevant results
+
     results = []
     seen_ids = set()
     
@@ -63,8 +69,7 @@ def smart_category_search(vector_db, query: str) -> List:
         {"type": "test", "k": 2}
     ]
     
-    print(f"\n🔍 [SMART SEARCH] Query: '{query}'")
-    logger.info(f"Smart Search Query: {query}")
+    logger.info(f"Smart Search Query: '{query}'")
     
     # Try category-specific searches
     for target in targets:
@@ -75,21 +80,27 @@ def smart_category_search(vector_db, query: str) -> List:
                 filter={"entity_type": target["type"]}
             )
             for doc, score in docs_with_score:
+                # Filter out low-relevance results
+                if score > MAX_DISTANCE_THRESHOLD:
+                    logger.info(f"Filtered out [{target['type']}]: {doc.metadata.get('name', 'Unknown')} (score={score:.2f} > {MAX_DISTANCE_THRESHOLD})")
+                    continue
+
                 doc_id = doc.metadata.get('url', doc.page_content[:20])
                 if doc_id not in seen_ids:
                     doc.metadata['search_category'] = target['type'].upper()
                     results.append((doc, score))
                     seen_ids.add(doc_id)
-                    print(f"   -> Found [{target['type']}]: {doc.metadata.get('name', 'Unknown')} (score={score})")
+                    logger.info(f"Found [{target['type']}]: {doc.metadata.get('name', 'Unknown')} (score={score:.2f})")
         except Exception as e:
             logger.warning(f"Category search failed for {target['type']}: {e}")
             continue
     
     # Fallback: generic search if no results
     if not results:
-        print("   -> No category matches. Falling back to generic search.")
+        logger.info("No category matches. Falling back to generic search.")
         generic_results = vector_db.similarity_search_with_score(query, k=4)
-        results = generic_results
+        # Apply threshold to fallback results too
+        results = [(doc, score) for doc, score in generic_results if score <= MAX_DISTANCE_THRESHOLD]
     
     return results
 

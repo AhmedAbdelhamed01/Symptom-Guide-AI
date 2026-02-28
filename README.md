@@ -1,314 +1,239 @@
 
-# SymptoGuide AI 🏥
+# SymptoGuide AI 🩺
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://github.com/AhmedAbdelhamed01/symptoguide-ai/workflows/Python%20Package/badge.svg)](https://github.com/AhmedAbdelhamed01/symptoguide-ai/actions)
 
-A research & educational prototype of a **Retrieval-Augmented Generation (RAG)** medical assistant built with **Streamlit**, **LangChain**, and **Chroma** vector database. 
+An intelligent **Retrieval-Augmented Generation (RAG)** medical assistant built with **Streamlit**, **LangChain**, **Ollama**, and **Chroma** vector database. SymptoGuide gathers your symptoms through a natural conversation, searches a curated medical knowledge base, and provides structured health guidance.
 
-SymptoGuide aggregates medical information from NHS and Mayo Clinic, processes it through a vector search pipeline, and provides AI-powered symptom guidance through an interactive web interface.
+⚠️ **DISCLAIMER**: This is a **research and educational prototype**. It is **NOT** a medical diagnostic tool. Always consult qualified healthcare professionals.
 
-⚠️ **IMPORTANT DISCLAIMER**: This project is for **research and educational purposes only**. It is **NOT** a medical diagnostic tool and should **never be used for actual medical diagnosis or treatment**. Always consult qualified healthcare professionals for medical advice.
+## ✨ Key Features
 
-## Features
+### 🧠 Smart Conversational AI
+- **Stage-based conversation flow**: Automatically detects whether to ask questions, gather details, or provide assessments
+- **System/Human message separation**: Proper prompt engineering with Ollama's chat format for natural, non-repetitive responses
+- **Symptom accumulation**: Tracks all symptoms across the entire conversation for accurate context
+- **Anti-hallucination rules**: Strict prompt constraints prevent inventing symptoms or mentioning rare diseases
 
-- 🔍 **Vector-based semantic search** using Chroma and HuggingFace embeddings
-- 🤖 **LLM integration** supporting both local (Ollama) and cloud-based models
-- 📊 **Multi-source data aggregation** (NHS conditions, symptoms, medicines; Mayo Clinic tests/procedures)
-- 🚀 **Interactive Streamlit UI** for symptom queries and medical information retrieval
-- 📦 **Full data pipeline** with scrapers, processors, and vector DB builders
-- ✅ **CI/CD ready** with GitHub Actions workflow for automated testing
-- 🎯 **Production-ready packaging** with setuptools configuration
+### 🔍 RAG Pipeline
+- **Semantic vector search** using Chroma DB and HuggingFace BGE embeddings
+- **Smart category search** with relevance scoring and filtering
+- **Medical knowledge from NHS & Mayo Clinic** (conditions, symptoms, medicines, tests)
 
-## Repository Structure
+### 🖼️ Multi-Modal Input
+- **Image analysis** via Ollama vision models (LLaVA, SVLM) — upload medical test images
+- **PDF processing** — upload medical documents for in-context analysis
+- **Text chat** — describe symptoms naturally in plain language
+
+### 🚨 Safety
+- **Emergency detection** with keyword and regex pattern matching
+- **Compound emergency detection** — cross-turn analysis for dangerous symptom combinations (cardiac, stroke, sepsis, anaphylaxis)
+- **Automatic escalation** to emergency guidance when critical patterns are detected
+
+### 💬 Chat Management
+- **Auto-save conversations** — every message is persisted automatically
+- **Chat history sidebar** — browse, load, and delete past conversations
+- **New Chat button** — start fresh consultations with one click
+
+## 📁 Project Structure
 
 ```
 symptoguide-ai/
 ├── src/
-│   ├── app/                          # Streamlit application
-│   │   ├── app.py                   # Main UI and logic
-│   │   ├── config.py                # Configuration management
-│   │   ├── llm_utils.py             # LLM backend utilities
-│   │   ├── medical_logic.py         # Medical data processing
-│   │   └── vector_db.py             # Vector database interface
-│   ├── processing/                  # Data transformation pipeline
+│   ├── app/                             # Main application
+│   │   ├── app.py                      # Streamlit UI + conversation routing
+│   │   ├── config.py                   # Prompts, models, system identity
+│   │   ├── llm_utils.py               # LLM chain builders (build_chain, build_chat_chain)
+│   │   ├── medical_logic.py           # Emergency detection, intent classification
+│   │   ├── vector_db.py               # Chroma DB loading + smart search
+│   │   ├── chat_manager.py            # Conversation persistence (auto-save)
+│   │   └── symptom_accumulator.py     # Cross-turn compound emergency detection
+│   ├── processing/                     # Data cleaning pipeline
 │   │   ├── process_nhs_symptoms_final.py
 │   │   ├── process_mayo_tests_final.py
 │   │   ├── clean_nhs_medicines_final.py
+│   │   ├── final_clean_nhs.py
 │   │   └── create_master_dataset.py
-│   ├── scrapers/                    # Web scraping modules
+│   ├── scrapers/                       # Web scraping modules
 │   │   ├── scrape_nhs.py
 │   │   ├── scrape_nhs_medicines.py
 │   │   ├── scrape_nhs_symptoms_clean.py
 │   │   └── scrape_symptoms.py
-│   └── vector_db/                   # Vector database creation
-├── data/
-│   ├── raw/                         # Original scraped data
-│   └── processed/                   # Cleaned JSONL for indexing
-├── chroma_db/                       # Persisted vector database (.gitignored)
-├── tests/                           # Unit tests
-├── pyproject.toml                   # Project metadata & build config
-├── setup.cfg                        # setuptools configuration
-├── requirements.txt                 # Python dependencies
-└── README.md                        # This file
+│   └── Vector_db/                      # Vector database builder
+│       └── create_vector_db.py
+├── tests/
+│   └── test_basic.py                   # 54 unit tests
+├── data/                               # Scraped & processed data (.gitignored)
+├── chroma_db/                          # Persisted vector DB (.gitignored)
+├── chat_history/                       # Saved conversations (.gitignored)
+├── requirements.txt
+├── setup.cfg
+├── pyproject.toml
+└── README.md
 ```
 
-## Prerequisites
+## 🚀 Quick Start
+
+### Prerequisites
 
 - **Python 3.10+**
-- **Git** for version control
-- **pip** (included with Python)
-- Internet connection for downloading models and data
-- *(Optional)* GPU + CUDA for faster local embeddings
+- **Ollama** installed and running ([ollama.com](https://ollama.com))
+- Required Ollama models:
+  ```bash
+  ollama pull llama3
+  ollama pull llava          # optional: for image analysis
+  ```
 
-## Installation
-
-### 1. Clone the repository
+### Installation
 
 ```bash
+# Clone
 git clone https://github.com/AhmedAbdelhamed01/symptoguide-ai.git
 cd symptoguide-ai
-```
 
-### 2. Create a virtual environment
-
-```bash
+# Create virtual environment
 python -m venv .venv
-# On Windows:
+# Windows:
 .venv\Scripts\activate
-# On macOS/Linux:
+# macOS/Linux:
 source .venv/bin/activate
-```
 
-### 3. Install dependencies
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 4. Run the application
+### Run
 
 ```bash
 streamlit run src/app/app.py
 ```
 
-The app will open at `http://localhost:8501`
+Opens at `http://localhost:8501`
 
+## 🏗️ Architecture
 
-## Configuration
-
-### Environment Variables
-
-Set these environment variables before running the app. A `.env` file
-in the project root is automatically loaded via `python-dotenv`.
-
-```bash
-# For HuggingFace Hub models (if used)
-HUGGINGFACEHUB_API_TOKEN=your_token_here
-
-# Additional configuration can be placed in .env as needed.
-# For Ollama (if running locally) no token is required, but you can still
-# override default model names or other settings via the config class.
 ```
-### Configuration File
-
-Edit `src/app/config.py` to customize:
-- Model provider (local Ollama or HuggingFace)
-- Vector database paths
-- Embedding model selection
-- LLM parameters (temperature, max tokens, etc.)
-
-## Data Pipeline
-
-The data processing flow goes from raw scraped data → cleaned JSON → master JSONL → vector embeddings:
-
-### Step 1: Scrape Raw Data
-
-Run scrapers to collect content from NHS and Mayo Clinic:
-
-```bash
-python src/scrapers/scrape_nhs.py
-python src/scrapers/scrape_nhs_medicines.py
-python src/scrapers/scrape_nhs_symptoms_clean.py
+                    ┌──────────────────────┐
+                    │   Streamlit UI       │
+                    │   (app.py)           │
+                    └──────┬───────────────┘
+                           │
+              ┌────────────┼──────────────┐
+              │            │              │
+    ┌─────────▼──────┐ ┌──▼────────┐ ┌───▼──────────┐
+    │Emergency Check │ │  Stage    │ │ Image/PDF    │
+    │(medical_logic) │ │Detection  │ │ Analysis     │
+    └────────────────┘ │(app.py)   │ │ (Ollama      │
+                       └──┬────────┘ │  Vision)     │
+                          │          └──────────────┘
+              ┌───────────┼───────────┐
+              │           │           │
+    ┌─────────▼───┐ ┌────▼─────┐ ┌──▼──────────┐
+    │  Symptom    │ │  RAG     │ │ build_chat  │
+    │Accumulation │ │ Search   │ │ _chain()    │
+    │(LLM call)   │ │(Chroma)  │ │(System+Human│
+    └─────────────┘ └──────────┘ │ messages)   │
+                                  └─────────────┘
 ```
 
-Data is saved to `data/raw/`
+### Conversation Flow
 
-### Step 2: Process & Clean
-
-Transform raw data into uniform, clean formats:
-
-```bash
-python src/processing/process_nhs_symptoms_final.py
-python src/processing/process_mayo_tests_final.py
-python src/processing/clean_nhs_medicines_final.py
-python src/processing/create_master_dataset.py
-```
-
-Output: `data/processed/symptoguide_master.jsonl`
-
-### Step 3: Build Vector Database
-
-Create embeddings and index in Chroma:
-
-```bash
-python src/vector_db/create_vector_db.py
-```
-
-Creates persistent database at `chroma_db/`
-
-## Usage
-
-### Running the Application
-
-```bash
-streamlit run src/app/app.py
-```
-
-**Features:**
-- Enter symptom descriptions in the search box or pick from a validated dropdown list
-- Confidence score displayed for retrieval results (helps gauge match quality)
-- Select model backend (local/cloud) in sidebar
-- View AI-generated guidance with source citations
-- Optional: Adjust temperature and max tokens for model behavior
-
-### Running Tests
-
-```bash
-pytest -q
-```
-
-## Architecture
-
-### Components
-
-- **Data Ingestion**: NHS/Mayo scrapers collect medical information
-- **Data Processing**: Cleaning and normalization pipeline
-- **Vector Database**: Chroma stores embeddings for semantic search
-- **LLM Backend**: Dual support for local (Ollama) and cloud models (HuggingFace)
-- **UI Layer**: Streamlit provides interactive interface
-- **RAG Pipeline**: LangChain orchestrates retrieval + generation
+1. **Emergency Check** → Fast keyword/regex scan for life-threatening symptoms
+2. **Message Classification** → `is_conversational()` decides if RAG is needed
+3. **Symptom Accumulation** → LLM extracts all symptoms from full conversation history
+4. **Stage Detection** → `determine_stage()` returns GREETING / GATHERING / READY / FOLLOWUP
+5. **Selective RAG** → Vector search only when medical content is present
+6. **Response Generation** → `build_chat_chain()` with System + Human message separation
 
 ### Technology Stack
 
 | Component | Technology |
 |-----------|------------|
-| **Framework** | Streamlit |
-| **LLM Integration** | LangChain |
-| **Vector DB** | Chroma |
-| **Embeddings** | HuggingFace Transformers |
-| **Local LLM** | Ollama |
-| **Testing** | pytest |
-| **Build** | setuptools, build |
+| **UI** | Streamlit |
+| **LLM** | Ollama (llama3) / HuggingFace |
+| **Vision** | Ollama (llava / svlm) |
+| **RAG** | LangChain |
+| **Vector DB** | Chroma + HuggingFace BGE-large-en-v1.5 |
+| **Testing** | pytest (54 tests) |
 
-## Packaging & Distribution
-
-### Build a wheel
+## 📊 Data Pipeline
 
 ```bash
-pip install build
-python -m build
+# Step 1: Scrape medical data
+python src/scrapers/scrape_nhs.py
+python src/scrapers/scrape_nhs_medicines.py
+python src/scrapers/scrape_nhs_symptoms_clean.py
+
+# Step 2: Clean & process
+python src/processing/process_nhs_symptoms_final.py
+python src/processing/process_mayo_tests_final.py
+python src/processing/clean_nhs_medicines_final.py
+python src/processing/create_master_dataset.py
+
+# Step 3: Build vector database
+python src/Vector_db/create_vector_db.py
 ```
 
-Output files go to `dist/`
-
-### Install locally
+## 🧪 Testing
 
 ```bash
-pip install dist/symptoguide_ai-*.whl
+pytest -q                    # Quick run
+pytest -v --tb=short         # Verbose with short tracebacks
 ```
 
-## CI/CD
+**54 tests** covering: emergency detection, context request detection, symptom extraction, project structure validation.
 
-GitHub Actions workflow (`.github/workflows/python-package.yml`):
-- Runs on every push to `main` and PRs
-- Installs dependencies
-- Runs test suite with pytest
-- Validates Python packaging
+## ⚙️ Configuration
 
-## Security & Privacy
+Edit `src/app/config.py` to customize:
 
-🔒 **Important**:
-- Never commit `chroma_db/`, `data/`, or `logs/` directories (.gitignored)
-- Don't share personal or sensitive medical data scraped from sources
-- Remove any PII before deploying publicly
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `LLM_MODEL` | `llama3` | Ollama model for text generation |
+| `EMBED_MODEL` | `BAAI/bge-large-en-v1.5` | HuggingFace embedding model |
+| `DB_DIR` | `chroma_db/` | Vector database path |
 
+For HuggingFace cloud models, set in `.env`:
+```bash
+HUGGINGFACEHUB_API_TOKEN=your_token_here
+```
 
-## Troubleshooting
+## 🔒 Security & Privacy
 
-### Vector Database Issues
+- `chroma_db/`, `data/`, `logs/`, `chat_history/` are `.gitignored`
+- `.env` files are `.gitignored`
+- No user data is transmitted externally when using Ollama locally
 
-**Problem**: App fails to locate the vector DB  
-**Solution**: Rebuild with `python src/vector_db/create_vector_db.py`
-### Empty Search / No Results
+## 🤝 Contributing
 
-**Problem**: The assistant says it found no matching records.  
-**Solution**: Try selecting symptoms from the dropdown list or rephrase your input.  
-If you consistently get low confidence (displayed above the response), the
-query may be too vague or unrelated to the existing dataset.
-### HuggingFace Download Issues
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-**Problem**: Model downloads fail  
-**Solution**: 
-- Verify `HUGGINGFACEHUB_API_TOKEN` is set (if needed)
-- Check internet connection
-- Manually download model: `huggingface-cli download <model-id>`
+## 👤 Authors
 
-### Streamlit Port Already in Use
-
-**Problem**: Port 8501 already in use  
-**Solution**: `streamlit run src/app/app.py --server.port 8502`
-
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
-- Reporting bugs
-- Proposing features
-- Submitting pull requests
-- Code style and testing requirements
-
-## Code of Conduct
-
-This project adheres to a Contributor Code of Conduct. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-
-## Authors
-
-- Ahmed Abdelhamed - Core development
+- **Ahmed Abdelhamed** — Core development
 - Developed as part of **CSAI 810: Topics in Artificial Intelligence** (Queen's University)
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- **NHS**: For providing open medical data
-- **Mayo Clinic**: For test/procedure information
-- **LangChain**: For the RAG orchestration framework
-- **Chroma**: For vector database functionality
-- **Streamlit**: For the interactive UI framework
+- [NHS](https://www.nhs.uk/) — Open medical data
+- [Mayo Clinic](https://www.mayoclinic.org/) — Test/procedure information
+- [LangChain](https://python.langchain.com/) — RAG orchestration
+- [Chroma](https://www.trychroma.com/) — Vector database
+- [Streamlit](https://docs.streamlit.io/) — UI framework
+- [Ollama](https://ollama.com/) — Local LLM inference
 
-## References
+## 📄 License
 
-- [LangChain Documentation](https://python.langchain.com/)
-- [Chroma Vector Database](https://www.trychroma.com/)
-- [Streamlit Documentation](https://docs.streamlit.io/)
-- [NHS Health Information](https://www.nhs.uk/)
+MIT License — see [LICENSE](LICENSE).
 
-## License
+## ⚠️ Medical Disclaimer
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
-## Disclaimer
-
-⚠️ **Medical Disclaimer**:  
-This software is provided as an **educational and research tool only**. It is:
-- **NOT** a substitute for professional medical advice
-- **NOT** intended for medical diagnosis or treatment decisions
-- **NOT** reviewed or approved by medical professionals
-- **NOT** a replacement for consulting healthcare providers
-
-**Always consult a qualified healthcare professional for medical concerns.**
+This software is an **educational and research tool only**. It is **NOT** a substitute for professional medical advice, diagnosis, or treatment. **Always consult a qualified healthcare professional.**
 
 ---
 
 **Last Updated**: February 2026  
-**Version**: 1.0.0  
+**Version**: 2.0.0  
 **Status**: Research/Educational Prototype

@@ -4,15 +4,20 @@ import json
 import os
 import time
 import string
+import logging
 
 # -------- Settings (dynamic paths) --------
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+from pathlib import Path
+
+CURRENT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CURRENT_DIR.parents[1]
 
 DATA_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "nhs_medicines")
 OUTPUT_FILE = os.path.join(DATA_DIR, "nhs_medicines.json")
 
 os.makedirs(DATA_DIR, exist_ok=True)
+
+logger = logging.getLogger("SymptoGuide")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -64,7 +69,7 @@ def get_medicine_links_for_letter(letter):
         return links
 
     except Exception as e:
-        print(f"[ERROR] Failed to fetch index for {letter}: {e}")
+        logger.error(f"Failed to fetch index for {letter}: {e}")
         return []
 
 def scrape_medicine_details(url):
@@ -98,14 +103,14 @@ def scrape_medicine_details(url):
         return ""
 
 def main():
-    print("------------------------------------------------")
-    print("   🏥 NHS MEDICINES SCRAPER V2 (FIXED) 🏥    ")
-    print("------------------------------------------------")
+    logger.info("------------------------------------------------")
+    logger.info("   NHS MEDICINES SCRAPER V2 (FIXED)    ")
+    logger.info("------------------------------------------------")
     
     all_medicines = []
     
     # 1. Gather Links
-    print("\n[PHASE 1] Scanning A-Z Index...")
+    logger.info("[PHASE 1] Scanning A-Z Index...")
     
     # We fetch the main page ONCE, then parse it for each letter to save requests
     # But since the function logic is per-letter, we can loop.
@@ -113,7 +118,7 @@ def main():
     # Let's try parsing the SINGLE main page for ALL letters at once.
     
     url = "https://www.nhs.uk/medicines/"
-    print(f"   -> Fetching {url}...")
+    logger.info(f"Fetching {url}...")
     r = requests.get(url, headers=HEADERS)
     soup = BeautifulSoup(r.text, "html.parser")
     
@@ -121,7 +126,7 @@ def main():
     main_wrapper = soup.find("main")
     if main_wrapper:
         found_links = main_wrapper.find_all("a", href=True)
-        print(f"   -> Found {len(found_links)} total links on page. Filtering...")
+        logger.info(f"Found {len(found_links)} total links on page. Filtering...")
         
         for a in found_links:
             href = a['href']
@@ -135,14 +140,14 @@ def main():
                 if not any(m['url'] == full_url for m in all_medicines):
                     all_medicines.append({"name": text, "url": full_url})
     
-    print(f"[INFO] Successfully found {len(all_medicines)} unique medicines.")
+    logger.info(f"Successfully found {len(all_medicines)} unique medicines.")
     
     # 2. Deep Scrape
-    print("\n[PHASE 2] Scraping Medicine Details...")
+    logger.info("[PHASE 2] Scraping Medicine Details...")
     final_data = []
     
     for idx, item in enumerate(all_medicines):
-        print(f"   [{idx+1}/{len(all_medicines)}] Scraping: {item['name']}...")
+        logger.info(f"[{idx+1}/{len(all_medicines)}] Scraping: {item['name']}...")
         
         desc = scrape_medicine_details(item['url'])
         
@@ -165,7 +170,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(final_data, f, ensure_ascii=False, indent=2)
         
-    print(f"\n[DONE] Saved {len(final_data)} medicines to {OUTPUT_FILE}")
+    logger.info(f"Saved {len(final_data)} medicines to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()

@@ -5,15 +5,20 @@ import os
 import time
 import random
 import string
+import logging
 
 # -------- Settings (dynamic paths) --------
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+from pathlib import Path
 
-DATA_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "mayo_clinic")
-OUTPUT_FILE = os.path.join(DATA_DIR, "mayo_tests_procedures.json")
+CURRENT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CURRENT_DIR.parents[1]
+
+DATA_DIR = PROJECT_ROOT / "data" / "raw" / "mayo_clinic"
+OUTPUT_FILE = DATA_DIR / "mayo_tests_procedures.json"
 
 os.makedirs(DATA_DIR, exist_ok=True)
+
+logger = logging.getLogger("SymptoGuide")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -27,7 +32,7 @@ def get_soup(url):
             r = requests.get(url, headers=HEADERS, timeout=15)
             if r.status_code == 200:
                 return BeautifulSoup(r.text, "html.parser")
-        except:
+        except Exception:
             time.sleep(2)
     return None
 
@@ -77,24 +82,24 @@ def scrape_test_details(url):
     return " ".join(definition_parts)
 
 def main():
-    print("[INFO] Starting Scraping: Tests & Procedures...")
+    logger.info("Starting Scraping: Tests & Procedures...")
     
     all_tests_links = []
     
     # 1. Gather Links A-Z
-    print("[PHASE 1] Gathering Links...")
+    logger.info("[PHASE 1] Gathering Links...")
     for letter in string.ascii_uppercase:
         found = scrape_tests_index(letter)
         if found:
             all_tests_links.extend(found)
-            print(f"   -> Letter {letter}: Found {len(found)} tests")
+            logger.info(f"Letter {letter}: Found {len(found)} tests")
             
     # Remove duplicates
     unique_tests = list({v['url']: v for v in all_tests_links}.values())
-    print(f"[INFO] Total Unique Tests Found: {len(unique_tests)}")
+    logger.info(f"Total Unique Tests Found: {len(unique_tests)}")
 
     # 2. Deep Scrape
-    print("\n[PHASE 2] Scraping Details...")
+    logger.info("[PHASE 2] Scraping Details...")
     final_data = []
     
     for idx, item in enumerate(unique_tests, 1):
@@ -108,7 +113,7 @@ def main():
         }
         final_data.append(entry)
         
-        print(f"[{idx}/{len(unique_tests)}] {item['test_name']}")
+        logger.info(f"[{idx}/{len(unique_tests)}] {item['test_name']}")
         
         # Save regularly
         if idx % 10 == 0:
@@ -118,7 +123,7 @@ def main():
     # Final Save
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(final_data, f, ensure_ascii=False, indent=2)
-    print(f"\n[DONE] Saved {len(final_data)} tests to {OUTPUT_FILE}")
+    logger.info(f"Saved {len(final_data)} tests to {OUTPUT_FILE}")
 
-if __name__ == "__main__": 1
+if __name__ == "__main__":
     main()

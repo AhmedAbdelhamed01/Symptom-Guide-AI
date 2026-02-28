@@ -1,5 +1,8 @@
 import json
 import os
+import logging
+
+logger = logging.getLogger("SymptoGuide")
 
 # -------- Settings (dynamic paths) --------
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,9 +20,9 @@ FILES_TO_MERGE = [
 OUTPUT_FILE = os.path.join(PROJECT_ROOT, "data", "processed", "symptoguide_master.jsonl")
 
 def main():
-    print("------------------------------------------------")
-    print("   🧬 SYMPTOGUIDE DATA MERGER (FINAL) 🧬    ")
-    print("------------------------------------------------")
+    logger.info("------------------------------------------------")
+    logger.info("   SYMPTOGUIDE DATA MERGER (FINAL)    ")
+    logger.info("------------------------------------------------")
     
     total_entries = 0
     all_data = []
@@ -27,10 +30,10 @@ def main():
     # 1. Read each file
     for file_path in FILES_TO_MERGE:
         if not os.path.exists(file_path):
-            print(f"[ERROR] File not found: {file_path}")
+            logger.error(f"File not found: {file_path}")
             continue
             
-        print(f"[READING] {os.path.basename(file_path)}...")
+        logger.info(f"Reading {os.path.basename(file_path)}...")
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -41,15 +44,15 @@ def main():
                     all_data.extend(data)
                     count = len(data)
                     total_entries += count
-                    print(f"   -> Added {count} entries.")
+                    logger.info(f"   -> Added {count} entries.")
                 else:
-                    print(f"   -> [WARNING] content is not a list. Skipped.")
+                    logger.warning("Content is not a list. Skipped.")
         except Exception as e:
-            print(f"   -> [ERROR] Failed to read: {e}")
+            logger.error(f"Failed to read: {e}")
 
     # 2. Save as JSON Lines (.jsonl)
     # JSONL is better because you can read it line-by-line without loading 100MB into RAM.
-    print(f"\n[SAVING] Writing {total_entries} entries to Master File...")
+    logger.info(f"Writing {total_entries} entries to Master File...")
     
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         for entry in all_data:
@@ -57,8 +60,8 @@ def main():
             json_string = json.dumps(entry, ensure_ascii=False)
             f.write(json_string + "\n")
 
-    print(f"\n[SUCCESS] Master Dataset Ready: {OUTPUT_FILE}")
-    print("You are now ready to build the Vector Database! 🚀")
+    logger.info(f"Master Dataset Ready: {OUTPUT_FILE}")
+    logger.info("You are now ready to build the Vector Database!")
 
 if __name__ == "__main__":
     main()

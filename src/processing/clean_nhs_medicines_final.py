@@ -1,6 +1,9 @@
 import json
 import os
 import re
+import logging
+
+logger = logging.getLogger("SymptoGuide")
 
 # -------- Settings (dynamic paths) --------
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,17 +52,17 @@ def clean_medicine_text(text):
     return " ".join(text.split())
 
 def main():
-    print(f"[INFO] Processing: {INPUT_FILE}")
+    logger.info(f"Processing: {INPUT_FILE}")
     
     if not os.path.exists(INPUT_FILE):
-        print(f"[ERROR] File not found: {INPUT_FILE}")
+        logger.error(f"File not found: {INPUT_FILE}")
         return
 
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     final_data = []
-    print(f"[INFO] Cleaning {len(data)} medicines...")
+    logger.info(f"Cleaning {len(data)} medicines...")
 
     for entry in data:
         name = entry.get('name', 'Unknown')
@@ -90,7 +93,7 @@ def main():
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(final_data, f, ensure_ascii=False, indent=2)
 
-    print(f"[SUCCESS] Saved {len(final_data)} clean medicines to: {OUTPUT_FILE}")
+    logger.info(f"Saved {len(final_data)} clean medicines to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()

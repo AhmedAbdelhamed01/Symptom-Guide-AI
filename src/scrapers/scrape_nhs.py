@@ -1,15 +1,22 @@
-# File: scripts/scraping/scrape_nhs.py
+# File: src/scrapers/scrape_nhs.py
 
 import requests
 from bs4 import BeautifulSoup
 import json
 import os
 import time
+import logging
+from pathlib import Path
 from urllib.parse import urljoin
 
-# -------- إعدادات المشروع --------
+logger = logging.getLogger("SymptoGuide")
+
+# -------- Project Settings --------
+CURRENT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CURRENT_DIR.parents[1]
+
 BASE_URL = "https://www.nhs.uk/conditions/"
-DATA_DIR = "data/raw/nhs"
+DATA_DIR = PROJECT_ROOT / "data" / "raw" / "nhs"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 HEADERS = {
@@ -18,25 +25,25 @@ HEADERS = {
                   "Chrome/115.0.0.0 Safari/537.36"
 }
 
-# -------- دوال مساعدة --------
+# -------- Helper Functions --------
 def save_json(data, filename):
-    """احفظ JSON"""
-    path = os.path.join(DATA_DIR, filename)
+    """Save data as JSON to the output directory."""
+    path = DATA_DIR / filename
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 def scrape_page(url):
-    """سحب محتوى صفحة وتحويلها لنصوص"""
+    """Fetch a page and extract its text content."""
     try:
         r = requests.get(url, headers=HEADERS, timeout=10)
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
 
-        # عنوان الصفحة
+        # Page title
         title = soup.find("h1")
         title_text = title.get_text(strip=True) if title else ""
 
-        # محتوى نصي رئيسي
+        # Main text content
         content_div = soup.find("div", class_="nhsuk-u-body-copy") or soup
         paragraphs = [p.get_text(strip=True) for p in content_div.find_all("p")]
 
@@ -46,11 +53,11 @@ def scrape_page(url):
             "content": "\n".join(paragraphs)
         }
     except Exception as e:
-        print(f"[ERROR] Failed {url}: {e}")
+        logger.error(f"Failed to scrape {url}: {e}")
         return None
 
 def get_all_conditions_links():
-    """سحب كل الروابط من صفحة conditions"""
+    """Fetch all condition links from the NHS conditions index page."""
     try:
         r = requests.get(BASE_URL, headers=HEADERS, timeout=10)
         r.raise_for_status()
@@ -59,32 +66,33 @@ def get_all_conditions_links():
 
         for a in soup.find_all("a", href=True):
             href = a['href']
-            # روابط داخلية فقط
+            # Only internal condition links
             if href.startswith("/conditions/") and href != "/conditions/":
                 full_url = urljoin(BASE_URL, href)
                 if full_url not in links:
                     links.append(full_url)
         return links
     except Exception as e:
-        print(f"[ERROR] Could not fetch condition links: {e}")
+        logger.error(f"Could not fetch condition links: {e}")
         return []
 
 # -------- Main Scraper --------
 def main():
     condition_links = get_all_conditions_links()
-    print(f"[INFO] Found {len(condition_links)} conditions")
+    logger.info(f"Found {len(condition_links)} conditions")
 
     all_data = []
     for idx, url in enumerate(condition_links, start=1):
-        print(f"[INFO] Scraping {idx}/{len(condition_links)}: {url}")
+        logger.info(f"Scraping {idx}/{len(condition_links)}: {url}")
         data = scrape_page(url)
         if data:
             all_data.append(data)
-        time.sleep(1)  # احترام قواعد الموقع
+        time.sleep(1)  # Respect site rate limits
 
-    # حفظ كل البيانات مرة واحدة
+    # Save all data at once
     save_json(all_data, "nhs_conditions.json")
-    print("[INFO] Scraping finished. Data saved in 'data/raw/nhs/nhs_conditions.json'")
+    logger.info("Scraping finished. Data saved in 'data/raw/nhs/nhs_conditions.json'")
 
 if __name__ == "__main__":
     main()
+
