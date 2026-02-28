@@ -236,22 +236,10 @@ if user_input:
             
             # --- STEP 3: HANDLE BY INTENT ---
             
-            # Check if user is asking about their chat history/previous symptoms
+            # Check if user is asking about their chat history/previous symptoms (PRIORITY)
             is_context_request = detect_context_request(user_input)
             
-            if intent == "GREETING":
-                full_response = "Hello! 👋 I am ready to help. Please tell me what symptoms you are experiencing (e.g., 'I have a headache')."
-                message_placeholder.markdown(full_response)
-            
-            elif intent == "OFF_TOPIC":
-                full_response = "I am a medical AI assistant. I cannot discuss that topic. Please ask me about medical symptoms."
-                message_placeholder.markdown(full_response)
-            
-            elif intent == "VAGUE":
-                full_response = "I understand you aren't feeling well, but I need more details.\n\n**Please tell me:**\n1. Where is the pain/symptom?\n2. How long have you had it?\n3. Are there other symptoms (fever, nausea, etc.)?"
-                message_placeholder.markdown(full_response)
-            
-            elif is_context_request:
+            if is_context_request:
                 # User is asking to recap/summarize their previous symptoms
                 st.info("📋 Reviewing your conversation history...")
                 all_symptoms = extract_all_symptoms(st.session_state.messages)
@@ -275,6 +263,18 @@ if user_input:
                 else:
                     full_response = f"I don't have any symptom records from our conversation yet. {all_symptoms}\n\nPlease tell me what symptoms you're experiencing, and I'll help you."
                     message_placeholder.markdown(full_response)
+            
+            elif intent == "GREETING":
+                full_response = "Hello! 👋 I am ready to help. Please tell me what symptoms you are experiencing (e.g., 'I have a headache')."
+                message_placeholder.markdown(full_response)
+            
+            elif intent == "OFF_TOPIC":
+                full_response = "I am a medical AI assistant. I cannot discuss that topic. Please ask me about medical symptoms."
+                message_placeholder.markdown(full_response)
+            
+            elif intent == "VAGUE":
+                full_response = "I understand you aren't feeling well, but I need more details.\n\n**Please tell me:**\n1. Where is the pain/symptom?\n2. How long have you had it?\n3. Are there other symptoms (fever, nausea, etc.)?"
+                message_placeholder.markdown(full_response)
             
             elif intent == "SYMPTOM":
                 # 1. Enhance Query

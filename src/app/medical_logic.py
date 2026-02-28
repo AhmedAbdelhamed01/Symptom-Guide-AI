@@ -71,16 +71,31 @@ def enhance_query(text: str) -> str:
 def detect_context_request(text: str) -> bool:
     """
     Detect if user is asking about their previous symptoms/history.
-    Examples: 'do you know all things i have', 'what did i tell you', 'summarize my symptoms'
+    Examples: 'do you have info for me from chat', 'chat history', 'what did i tell you', 'summarize my symptoms'
     """
     text_lower = text.lower()
+    
+    # Keywords and phrases for context requests
     context_keywords = [
+        # Direct history references (flexible for typos)
+        "chat", "histor", "conversation", "record",
+        "from chat", "info for me", "information for me",
         "know all things", "all things i have", "everything i have",
-        "what did i", "what have i", "summarize", "recap",
-        "remember", "what was", "previous", "before",
+        
+        # Questions about previous info
+        "what did i", "what have i", "what i said", "what i told",
+        "summarize", "recap", "summary", "remember", 
+        "what was", "previous", "before", "earlier",
         "did i tell", "all symptoms", "full history",
-        "my symptoms", "what else", "tell me about", "what i said"
+        "my symptoms", "what else", "tell me about",
+        
+        # New variations
+        "remind", "do you remember", "do i have", "my condition",
+        "track", "past", "mentioned", "your record", "my record",
+        "tell me what"
     ]
+    
+    # Check for exact phrase matches or partial matches
     return any(keyword in text_lower for keyword in context_keywords)
 
 
